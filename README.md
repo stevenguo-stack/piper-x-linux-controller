@@ -1,24 +1,40 @@
 # PiPER X Linux Controller
 
-面向 **Ubuntu/Linux + AgileX PiPER X + 官方 USB-CAN 模块** 的安全导向控制程序。
+A safety-oriented control package for **Ubuntu/Linux + AgileX PiPER X + the official USB-CAN adapter**.
 
-主要入口：
+[中文说明](README_CN.md)
 
-- `piper_x_remote.py` / `run_remote.sh`：中文遥控器式图形界面，提供前后左右上下、Roll/Pitch/Yaw、夹爪、一键教学动作。
-- `piper_x_gui.py` / `run_gui.sh`：高级图形界面，提供六关节与绝对笛卡尔目标输入。
-- `piper_x_cli.py` / `run_cli.sh`：终端调试与脚本控制。
+## Interfaces
 
-遥控器界面支持：
+- `piper_x_remote.py` / `run_remote.sh`: recommended touch-friendly remote interface for Cartesian jogging, wrist rotation, gripper control, waypoint teaching, and basket-handling sequences.
+- `piper_x_gui.py` / `run_gui.sh`: advanced GUI for six-joint and absolute Cartesian targets.
+- `piper_x_cli.py` / `run_cli.sh`: terminal interface for debugging and scripted control.
 
-- 末端前、后、左、右、上、下小步点动
-- Roll / Pitch / Yaw 小角度翻腕
-- 夹爪打开、夹紧和指定宽度
-- 教学并保存“安全位、抓取前、抓取位、抬起位、倒球前、倒球位”
-- 一键抓篮子、倒球、放回和完整循环
-- 任务安全确认、运动完成检查、取消序列和软件急停
-- 无硬件 Dry Run 模式
-- Ubuntu 应用菜单启动器，不必每次在终端中操作
+## Remote Controller Features
 
-完整安装、接线、教学和安全说明见：[中文使用说明](README_CN.md)。
+- Small forward, backward, left, right, up, and down end-effector movements
+- Incremental Roll, Pitch, and Yaw wrist rotation
+- Gripper open, close, and target-width commands
+- Teaching and saving safe, pre-grasp, grasp, lift, pre-dump, and dump poses
+- One-click basket pickup, dumping, return, and full-cycle sequences
+- Motion-completion checks, sequence cancellation, and software emergency stop
+- Hardware-free dry-run mode
+- Ubuntu application launcher, so normal operation does not require terminal commands
 
-> 第一次实机测试请保持低速、空载，并确保实体急停随手可达。软件急停不能替代实体急停和断电开关。预设动作必须在真实安装完成后逐点教学，程序不会猜测安全姿态。
+## Quick Start
+
+```bash
+chmod +x install.sh
+./install.sh
+./run_remote.sh --dry-run
+```
+
+Run the automated hardware-free check with:
+
+```bash
+./test_dry_run.sh
+```
+
+See [README_CN.md](README_CN.md) for complete installation, wiring, CAN setup, waypoint-teaching, and safety instructions.
+
+> **Safety:** During the first real-hardware test, use low speed and no payload, keep the physical emergency stop within reach, and clear the entire work area. A software emergency stop cannot replace a physical emergency stop or power cutoff. Teach every task pose on the fully assembled robot before running an automated sequence.
