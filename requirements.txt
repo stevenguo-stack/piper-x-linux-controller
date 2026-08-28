@@ -1,0 +1,3 @@
+python-can>=3.3.4
+typing-extensions>=3.7.4.3
+git+https://github.com/agilexrobotics/pyAgxArm.git@2255d88e1fabdf20fcd1eccbc4312b4ce1cfd2d4

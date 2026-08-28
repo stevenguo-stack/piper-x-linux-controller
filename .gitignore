@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Logs and local state
+*.log
+*.pid
+.DS_Store
+Thumbs.db
+
+# Local pose changes can be committed deliberately; no blanket ignore here.
