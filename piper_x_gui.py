@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Safety-oriented graphical remote for AgileX PiPER X on Linux."""
+"""Graphical remote for AgileX PiPER X on Windows and Linux."""
 from __future__ import annotations
 
 import argparse
@@ -15,6 +15,7 @@ from tkinter import messagebox, scrolledtext, ttk
 from typing import Any, Callable, Optional
 
 from piper_x_controller import ArmSnapshot, PiperXController
+from piper_x_platform import add_can_arguments, default_pose_file, prepare_windows_gui
 from piper_x_waypoints import (
     BasketSequenceRunner,
     SEQUENCE_REQUIREMENTS,
@@ -42,7 +43,8 @@ class PiperXGUI:
         self._ui_lock = threading.Lock()
         self._log_queue: queue.Queue[str] = queue.Queue()
 
-        self.root.title("PiPER X 遥控器 / Linux Controller")
+        mode_title = "模拟预览" if self.c.dry_run else "高级控制"
+        self.root.title(f"NXTektal · PiPER X · {mode_title}")
         self.root.minsize(1100, 830)
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
@@ -121,7 +123,8 @@ class PiperXGUI:
         frame = ttk.LabelFrame(parent, text="连接 / Connection")
         frame.pack(side=LEFT, fill=BOTH, expand=True, padx=(0, 5))
 
-        ttk.Label(frame, text="SocketCAN:").grid(
+        channel_label = "CAN设备编号:" if self.c.can_interface == "agx_cando" else "SocketCAN:"
+        ttk.Label(frame, text=channel_label).grid(
             row=0, column=0, sticky="w", padx=8, pady=6
         )
         self.can_var = StringVar(value=self.c.can_port)
@@ -592,10 +595,11 @@ class PiperXGUI:
     # Connection and safety actions
     # ------------------------------------------------------------------
     def connect(self) -> None:
-        self.c.can_port = self.can_var.get().strip() or "can0"
+        self.c.can_port = self.can_var.get().strip()
         self.connection_text.set("连接中 / Connecting …")
 
         def success(fw: dict[str, str]) -> None:
+            self.can_var.set(self.c.can_port)
             self.connection_text.set("已连接 / Connected")
             self.firmware_text.set(
                 f"{fw.get('software_version', '?')} / {fw.get('hardware_version', '?')}"
@@ -1096,8 +1100,8 @@ class PiperXGUI:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="PiPER X Linux graphical remote")
-    parser.add_argument("--can", default="can0", help="SocketCAN interface")
+    parser = argparse.ArgumentParser(description="PiPER X Windows/Linux graphical remote")
+    add_can_arguments(parser)
     parser.add_argument("--speed", type=int, default=10, help="Initial speed 1..50%%")
     parser.add_argument(
         "--gripper-max-mm",
@@ -1107,7 +1111,7 @@ def main() -> int:
     )
     parser.add_argument(
         "--waypoints",
-        default=str(Path(__file__).resolve().with_name("poses.json")),
+        default=None,
         help="JSON file for taught joint-space waypoints",
     )
     parser.add_argument(
@@ -1120,9 +1124,11 @@ def main() -> int:
         speed_percent=args.speed,
         gripper_max_mm=args.gripper_max_mm,
         dry_run=args.dry_run,
+        can_interface=args.interface,
     )
+    prepare_windows_gui()
     root = Tk()
-    PiperXGUI(root, controller, args.waypoints)
+    PiperXGUI(root, controller, args.waypoints or default_pose_file(args.dry_run))
     root.mainloop()
     return 0
 

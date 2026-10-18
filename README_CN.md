@@ -1,5 +1,9 @@
 # PiPER X Linux 简易控制程序
 
+**Windows 用户请先看 [Windows 版使用说明](README_WINDOWS_CN.md)。**
+同一套控制代码现在支持 Windows 的官方 `agx_cando` 后端（设备编号默认 `0`）
+和 Linux 的 `socketcan` 后端（默认 `can0`）。本页保留原有 Linux 安装步骤。
+
 这套程序基于 AgileX 官方 `pyAgxArm` Python SDK，为 **Ubuntu/Linux + PiPER X + 官方 USB-CAN 模块**做了一层更简单、偏安全的控制界面。
 
 它包含：
@@ -224,6 +228,9 @@ NXTektal PiPER X 遥控器
 ```
 
 所以重新解压或更新程序后，已经教学的位置仍会保留。
+
+无硬件模拟默认使用独立的 `basket_task_demo.json`；高级界面/终端的模拟姿态
+默认使用 `poses_demo.json`，避免模拟示教覆盖实机动作点。
 
 ### 高级图形界面
 

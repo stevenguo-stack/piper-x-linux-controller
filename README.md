@@ -1,8 +1,25 @@
-# PiPER X Linux Controller
+# PiPER X Controller — Windows and Linux
 
-A safety-oriented control package for **Ubuntu/Linux + AgileX PiPER X + the official USB-CAN adapter**.
+A control package for **Windows or Ubuntu/Linux + AgileX PiPER X + the official USB-CAN adapter**.
 
-[中文说明](README_CN.md)
+[Windows 中文使用说明](README_WINDOWS_CN.md) · [Linux 中文说明](README_CN.md)
+
+## Windows quick start
+
+Install 64-bit Python 3.10–3.12 from python.org with Tcl/Tk support. Extract this
+folder before opening any launcher.
+
+- Double-click `preview_windows.bat` to open the hardware-free remote. This does
+  not install the CAN SDK or access a device.
+- Double-click `install_windows.bat` once to prepare real-arm dependencies.
+- Double-click `check_windows.bat` to check the Python/SDK/plugin environment.
+- Double-click `run_remote_windows.bat` for the real-arm interface. Connect and
+  enable remain explicit actions inside the interface.
+
+Windows uses the official `agx_cando` backend with device index `0`; Linux keeps
+`socketcan` with interface `can0`. This is a Python source package with launchers,
+not a standalone executable. Native Windows/DLL/USB-CAN operation still requires
+validation on a Windows machine with the physical arm.
 
 ## Interfaces
 
@@ -21,7 +38,7 @@ A safety-oriented control package for **Ubuntu/Linux + AgileX PiPER X + the offi
 - Hardware-free dry-run mode
 - Ubuntu application launcher, so normal operation does not require terminal commands
 
-## Quick Start
+## Linux quick start
 
 ```bash
 chmod +x install.sh

@@ -1,0 +1,4 @@
+# Native Windows CAN support. Both official sources are fixed to reviewed commits.
+# Archive URLs avoid requiring Git on the Windows computer.
+pyAgxArm @ https://github.com/agilexrobotics/pyAgxArm/archive/2255d88e1fabdf20fcd1eccbc4312b4ce1cfd2d4.zip
+python-can-agx-cando @ https://github.com/agilexrobotics/python-can-agx-cando/archive/fbd76e5c3e6b6d9b30eeb0610c5b595994d8ad94.zip

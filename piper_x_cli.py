@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Interactive terminal controller for AgileX PiPER X on Linux."""
+"""Interactive terminal controller for AgileX PiPER X on Windows and Linux."""
 from __future__ import annotations
 
 import argparse
@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import List
 
 from piper_x_controller import PiperXController
+from piper_x_platform import add_can_arguments, default_pose_file
 
 
 POSES_PATH = Path(__file__).resolve().with_name("poses.json")
@@ -38,6 +39,7 @@ def load_poses() -> dict:
 
 
 def save_poses(data: dict) -> None:
+    POSES_PATH.parent.mkdir(parents=True, exist_ok=True)
     POSES_PATH.write_text(
         json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8"
     )
@@ -354,8 +356,10 @@ class PiperShell(cmd.Cmd):
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="PiPER X Linux terminal controller")
-    parser.add_argument("--can", default="can0", help="SocketCAN interface (default: can0)")
+    global POSES_PATH
+    parser = argparse.ArgumentParser(description="PiPER X Windows/Linux terminal controller")
+    add_can_arguments(parser)
+    parser.add_argument("--waypoints", type=Path, default=None, help="Saved joint poses JSON")
     parser.add_argument("--speed", type=int, default=15, help="Initial speed percent, 1..50")
     parser.add_argument(
         "--gripper-max-mm",
@@ -369,12 +373,14 @@ def main() -> int:
         help="Run a hardware-free simulation for UI/command testing",
     )
     args = parser.parse_args()
+    POSES_PATH = args.waypoints or default_pose_file(args.dry_run)
 
     controller = PiperXController(
         can_port=args.can,
         speed_percent=args.speed,
         gripper_max_mm=args.gripper_max_mm,
         dry_run=args.dry_run,
+        can_interface=args.interface,
     )
     try:
         fw = controller.connect()

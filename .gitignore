@@ -9,12 +9,14 @@ __pycache__/
 
 # Virtual environments
 .venv/
+.venv-windows/
 venv/
 env/
 
 # Logs and local state
 *.log
 *.pid
+poses_demo.json
 .DS_Store
 Thumbs.db
 
