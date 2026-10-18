@@ -127,4 +127,13 @@ Windows 默认保存目录为：
 - [AgileX pyAgxArm：`2255d88e1fabdf20fcd1eccbc4312b4ce1cfd2d4`](https://github.com/agilexrobotics/pyAgxArm/tree/2255d88e1fabdf20fcd1eccbc4312b4ce1cfd2d4)。
 - [AgileX python-can-agx-cando：`fbd76e5c3e6b6d9b30eeb0610c5b595994d8ad94`](https://github.com/agilexrobotics/python-can-agx-cando/tree/fbd76e5c3e6b6d9b30eeb0610c5b595994d8ad94)。
 
-开发环境为 Linux。此 Windows 交付包含源码和可双击入口，已做可在该环境完成的静态与参数分发检查；**尚未在实际 Windows 电脑上验证批处理启动、DLL 加载或 PiPER X 实机通信与运动**。运行模拟界面成功与真实机械臂测试成功是两个不同的验证阶段。
+本次除了 Linux 本地检查，还在 **GitHub Actions 的 Windows Server 2025 x64 / Python 3.12.10** 环境完成了以下验证：
+
+- 两个固定版本官方依赖安装、`pip check`、SDK 与 CAN 后端类导入通过。
+- 10 项平台选择、设备索引、双阶段固件连接、失败清理、动作锁和示教路径测试通过。
+- 中文遥控器与高级界面的实际 Tk 窗口均完成创建和更新，初始状态为模拟、未连接、动作锁定。
+- Windows 批处理启动器参数传递及终端模拟运行通过。
+
+[查看通过的 Windows 检查记录](https://github.com/stevenguo-stack/piper-x-linux-controller/actions/runs/39176648946)。该记录对应代码提交 `6e9ec195a8c84e8c289207b5074ebe93fdccb49f`；后续更新仅补充文档。
+
+**尚未验证你电脑上的 USB-CAN 驱动、真实设备的 DLL 调用与通信，也没有完成 PiPER X 实机运动验证。** 本包包含 Python 源码和可双击启动脚本；运行前仍需要上面指定的 Python。首次实机连接和篮子动作示教按第 3、4 节进行。

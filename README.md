@@ -18,8 +18,11 @@ folder before opening any launcher.
 
 Windows uses the official `agx_cando` backend with device index `0`; Linux keeps
 `socketcan` with interface `can0`. This is a Python source package with launchers,
-not a standalone executable. Native Windows/DLL/USB-CAN operation still requires
-validation on a Windows machine with the physical arm.
+not a standalone executable. Installation, SDK/backend imports, both Tk window
+constructors, batch launch arguments, and terminal simulation passed on Windows
+Server 2025 x64 / Python 3.12.10 in [Windows CI](https://github.com/stevenguo-stack/piper-x-linux-controller/actions/runs/39176648946).
+Physical USB-CAN drivers, device communication, and real arm motion still require
+validation with the user's hardware.
 
 ## Interfaces
 

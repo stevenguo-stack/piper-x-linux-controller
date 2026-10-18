@@ -1,0 +1,19 @@
+PiPER X Windows 版 v0.2
+
+1. 把整个文件夹解压出来。
+2. 电脑需要 Python 3.10、3.11 或 3.12 的 64 位版本，含 Tcl/Tk。
+   官方下载：https://www.python.org/downloads/windows/
+3. 现在先双击 preview_windows.bat：打开中文模拟遥控器，不需要机械臂。
+4. 要接真实机械臂，先双击 install_windows.bat，等 Installation complete。
+5. 连接机械臂随附的官方 USB-CAN，并单独给机械臂供电。
+6. 双击 run_remote_windows.bat，在界面里按“连接”，确认反馈后再进行使能和小步测试。
+
+默认设备编号 0，初始速度 5%。Windows 的设备编号不是 Linux 的 can0。
+夹爪行程、抓篮位置和倒球位置需要按真实安装情况设置/示教。
+
+完整说明：README_WINDOWS_CN.md
+环境检查：check_windows.bat
+高级界面：run_gui_windows.bat
+
+Windows 测试环境的依赖安装、窗口创建、批处理入口和模拟检查已通过。
+你的 USB-CAN 驱动、通信和机械臂实机运动仍需要首次现场验证。
