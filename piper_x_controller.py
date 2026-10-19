@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Safety-oriented Linux controller wrapper for AgileX PiPER X.
+"""Windows/Linux controller wrapper for AgileX PiPER X.
 
 This wrapper intentionally exposes only the ordinary trajectory interfaces
 (move_j / move_p / move_l) and the standard gripper.  It does not expose the
@@ -13,6 +13,8 @@ import threading
 import time
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Sequence
+
+from piper_x_platform import resolve_can_connection
 
 
 @dataclass
@@ -34,18 +36,21 @@ class PiperXController:
 
     def __init__(
         self,
-        can_port: str = "can0",
+        can_port: Optional[str] = None,
         speed_percent: int = 15,
         gripper_max_mm: float = 70.0,
         connect_timeout: float = 15.0,
         dry_run: bool = False,
+        can_interface: Optional[str] = "auto",
     ) -> None:
         if not 1 <= speed_percent <= 50:
             raise ValueError("For this controller, speed_percent must be 1..50.")
         if not 1.0 <= gripper_max_mm <= 100.0:
             raise ValueError("gripper_max_mm must be 1..100 mm.")
 
-        self.can_port = can_port
+        self.can_interface, self.can_port = resolve_can_connection(
+            can_port, can_interface
+        )
         self.speed_percent = int(speed_percent)
         self.gripper_max_mm = float(gripper_max_mm)
         self.connect_timeout = float(connect_timeout)
@@ -80,7 +85,8 @@ class PiperXController:
             )
         except ImportError as exc:
             raise RuntimeError(
-                "pyAgxArm is not installed. Run ./install.sh first."
+                "pyAgxArm is not installed. On Windows run install_windows.bat; "
+                "on Ubuntu run ./install.sh. Use --dry-run for a hardware-free preview."
             ) from exc
         return {
             "AgxArmFactory": AgxArmFactory,
@@ -94,6 +100,12 @@ class PiperXController:
             if self.connected:
                 return self.firmware or {}
 
+            # The GUI permits changing the channel before connecting; validate it
+            # again here so a Linux name cannot silently select Windows device 0.
+            self.can_interface, self.can_port = resolve_can_connection(
+                self.can_port, self.can_interface
+            )
+
             if self.dry_run:
                 self.connected = True
                 self.firmware = {
@@ -102,10 +114,13 @@ class PiperXController:
                 }
                 return self.firmware
 
-            if platform.system() != "Linux":
+            expected_system = {
+                "socketcan": "Linux", "agx_cando": "Windows"
+            }[self.can_interface]
+            if platform.system() != expected_system:
                 raise RuntimeError(
-                    "This package is configured for Linux SocketCAN. "
-                    "Use Ubuntu/Linux or adapt the CAN backend explicitly."
+                    f"The {self.can_interface} backend requires {expected_system}. "
+                    "Use --interface auto on Windows/Linux, or --dry-run to preview."
                 )
 
             sdk = self._load_sdk()
@@ -117,11 +132,14 @@ class PiperXController:
             # Probe with the default profile, read firmware, then reconnect with
             # the profile that matches the controller firmware. This follows the
             # official detect_piper_series.py workflow.
+            can_config = {
+                "interface": self.can_interface,
+                "channel": self.can_port,
+                "bitrate": 1_000_000,
+            }
             probe_cfg = create_cfg(
                 robot=ArmModel.PIPER_X,
-                interface="socketcan",
-                channel=self.can_port,
-                bitrate=1_000_000,
+                **can_config,
             )
             probe = AgxArmFactory.create_arm(probe_cfg)
             try:
@@ -135,9 +153,11 @@ class PiperXController:
                     time.sleep(0.25)
                 if firmware is None:
                     raise TimeoutError(
-                        f"Timed out waiting for PiPER X firmware on {self.can_port}. "
+                        f"Timed out waiting for PiPER X firmware on "
+                        f"{self.can_interface}:{self.can_port}. "
                         "Check 24 V power, the official USB-CAN adapter, CAN wiring, "
-                        "and that the interface is UP at 1 Mbps."
+                        "and the 1 Mbps connection. On Windows check the device index "
+                        "and vendor driver; on Linux check that the CAN interface is UP."
                     )
                 software_version = firmware["software_version"]
                 firmware_profile = resolve_profile(
@@ -152,37 +172,38 @@ class PiperXController:
             self.robot_cfg = create_cfg(
                 robot=ArmModel.PIPER_X,
                 firmeware_version=firmware_profile,
-                interface="socketcan",
-                channel=self.can_port,
-                bitrate=1_000_000,
+                **can_config,
             )
             self.robot = AgxArmFactory.create_arm(self.robot_cfg)
-            self.robot.connect()
-            self.gripper = self.robot.init_effector(
-                self.robot.OPTIONS.EFFECTOR.AGX_GRIPPER
-            )
+            try:
+                self.robot.connect()
+                self.gripper = self.robot.init_effector(
+                    self.robot.OPTIONS.EFFECTOR.AGX_GRIPPER
+                )
 
-            deadline = time.monotonic() + self.connect_timeout
-            while time.monotonic() < deadline:
-                if self.robot.get_joint_angles() is not None:
-                    break
-                time.sleep(0.05)
-            else:
+                deadline = time.monotonic() + self.connect_timeout
+                while time.monotonic() < deadline:
+                    if self.robot.get_joint_angles() is not None:
+                        break
+                    time.sleep(0.05)
+                else:
+                    raise TimeoutError(
+                        "Firmware was detected, but joint feedback did not arrive. "
+                        "Check CAN connection and emergency-stop state."
+                    )
+            except Exception:
+                # Attempt to release the Windows device handle so ordinary
+                # connection failures can be retried without restarting the app.
                 try:
                     self.robot.disconnect()
+                except Exception:
+                    pass
                 finally:
                     self.robot = None
                     self.gripper = None
-                raise TimeoutError(
-                    "Firmware was detected, but joint feedback did not arrive. "
-                    "Check CAN connection and emergency-stop state."
-                )
-
-            # The arm is mounted upright on top of the chassis.
-            self.robot.set_installation_pos(
-                self.robot.OPTIONS.INSTALLATION_POS.HORIZONTAL
-            )
-            self.robot.set_speed_percent(self.speed_percent)
+                    self.connected = False
+                    self.motion_armed = False
+                raise
 
             self.firmware = firmware
             self.connected = True
@@ -255,6 +276,16 @@ class PiperXController:
                 self._sim_estopped = False
             return True
 
+        # Changing installation/speed sends mode configuration. Defer it until
+        # the user explicitly requests Enable instead of doing it on connection.
+        with self._lock:
+            self._require_connected()
+            self.motion_armed = False
+            self.robot.set_installation_pos(
+                self.robot.OPTIONS.INSTALLATION_POS.HORIZONTAL
+            )
+            self.robot.set_speed_percent(self.speed_percent)
+
         # Lock only around each SDK call rather than across the whole timeout.
         # This leaves short opportunities for an electronic-stop request from
         # another UI thread; the physical E-stop is still the primary stop.
@@ -317,7 +348,7 @@ class PiperXController:
         with self._lock:
             self._require_connected()
             self.speed_percent = percent
-            if not self.dry_run:
+            if not self.dry_run and self.motion_armed:
                 self.robot.set_speed_percent(percent)
 
     # ------------------------------------------------------------------

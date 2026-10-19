@@ -1,0 +1,41 @@
+name: Windows controller smoke check
+
+on:
+  pull_request:
+    paths:
+      - '**.py'
+      - '*.bat'
+      - 'windows_requirements.txt'
+      - '.github/workflows/windows-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+          architecture: x64
+      - name: Install the Windows dependencies without hardware access
+        run: python windows_launcher.py install
+      - name: Check platform selection and motion locks
+        run: .\.venv-windows\Scripts\python.exe -m unittest discover -s tests -v
+      - name: Construct both Tk interfaces in simulation
+        run: .\.venv-windows\Scripts\python.exe tests/gui_smoke.py
+      - name: Exercise the Windows batch launcher and terminal simulation
+        shell: cmd
+        run: |
+          call run_remote_windows.bat --help <NUL
+          if errorlevel 1 exit /b 1
+          call run_gui_windows.bat --help <NUL
+          if errorlevel 1 exit /b 1
+          (echo status&echo quit) | call run_cli_windows.bat --dry-run
+          if errorlevel 1 exit /b 1

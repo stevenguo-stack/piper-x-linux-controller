@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Touch-friendly remote controller for AgileX PiPER X on Ubuntu/Linux.
+"""Touch-friendly remote controller for AgileX PiPER X on Windows and Linux.
 
 The remote UI is intentionally conservative:
 - only ordinary Move-J / Move-L / gripper APIs are used;
@@ -40,6 +40,7 @@ from tkinter import scrolledtext, ttk
 from typing import Any, Callable, Dict, Iterable, Optional
 
 from piper_x_controller import ArmSnapshot, PiperXController
+from piper_x_platform import add_can_arguments, prepare_windows_gui, user_config_directory
 
 
 POSE_SLOTS = (
@@ -169,7 +170,8 @@ class PiperXRemoteGUI:
         self._sequence_cancel = threading.Event()
         self._last_snapshot: Optional[ArmSnapshot] = None
 
-        self.root.title("NXTektal · PiPER X 遥控器")
+        mode_title = "模拟预览" if self.c.dry_run else "机械臂控制"
+        self.root.title(f"NXTektal · PiPER X · {mode_title}")
         self.root.minsize(1120, 760)
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
@@ -178,8 +180,8 @@ class PiperXRemoteGUI:
         self.firmware_text = StringVar(value="—")
         self.can_var = StringVar(value=self.c.can_port)
         self.speed_var = StringVar(value=str(self.c.speed_percent))
-        self.move_step_mm_var = StringVar(value="10")
-        self.rotate_step_deg_var = StringVar(value="2")
+        self.move_step_mm_var = StringVar(value="2")
+        self.rotate_step_deg_var = StringVar(value="0.5")
         self.gripper_width_var = StringVar(value=f"{self.c.gripper_max_mm:.1f}")
         self.gripper_force_var = StringVar(value="3.0")
         self.auto_confirm_var = BooleanVar(value=False)
@@ -241,7 +243,8 @@ class PiperXRemoteGUI:
         frame = ttk.LabelFrame(parent, text="连接")
         frame.pack(side=LEFT, fill=BOTH, expand=True, padx=(0, 5))
 
-        ttk.Label(frame, text="CAN接口").grid(row=0, column=0, padx=8, pady=6)
+        channel_label = "CAN设备编号" if self.c.can_interface == "agx_cando" else "CAN接口"
+        ttk.Label(frame, text=channel_label).grid(row=0, column=0, padx=8, pady=6)
         self.can_entry = ttk.Entry(frame, textvariable=self.can_var, width=12)
         self.can_entry.grid(row=0, column=1, padx=4, pady=6)
         mode = "模拟模式（不控制真机）" if self.c.dry_run else "真实机械臂"
@@ -588,9 +591,10 @@ class PiperXRemoteGUI:
     def connect(self) -> None:
         if not self._require_not_busy():
             return
-        self.c.can_port = self.can_var.get().strip() or "can0"
+        self.c.can_port = self.can_var.get().strip()
 
         def connected(fw: Dict[str, str]) -> None:
+            self.can_var.set(self.c.can_port)
             self.connection_text.set("已连接")
             self.firmware_text.set(
                 f"{fw.get('software_version', '?')} / {fw.get('hardware_version', '?')}"
@@ -1079,14 +1083,14 @@ class PiperXRemoteGUI:
         self.root.destroy()
 
 
-def default_task_file() -> Path:
-    base = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
-    return base / "nxtektal-piper-x" / "basket_task.json"
+def default_task_file(dry_run: bool = False) -> Path:
+    name = "basket_task_demo.json" if dry_run else "basket_task.json"
+    return user_config_directory() / name
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="NXTektal PiPER X remote GUI")
-    parser.add_argument("--can", default="can0", help="SocketCAN interface (default: can0)")
+    add_can_arguments(parser)
     parser.add_argument("--speed", type=int, default=10, help="Initial speed percentage, 1..50")
     parser.add_argument(
         "--gripper-max-mm",
@@ -1097,7 +1101,7 @@ def main() -> int:
     parser.add_argument(
         "--task-file",
         type=Path,
-        default=default_task_file(),
+        default=None,
         help="JSON file used to save taught basket poses",
     )
     parser.add_argument("--dry-run", action="store_true", help="Run without hardware")
@@ -1108,13 +1112,16 @@ def main() -> int:
         speed_percent=args.speed,
         gripper_max_mm=args.gripper_max_mm,
         dry_run=args.dry_run,
+        can_interface=args.interface,
     )
+    task_file = args.task_file or default_task_file(args.dry_run)
     try:
-        task_store = BasketTaskStore(args.task_file, args.gripper_max_mm)
+        task_store = BasketTaskStore(task_file, args.gripper_max_mm)
     except Exception as exc:
         print(f"Warning: {exc}", file=sys.stderr)
-        task_store = BasketTaskStore(args.task_file, args.gripper_max_mm)
+        task_store = BasketTaskStore(task_file, args.gripper_max_mm)
 
+    prepare_windows_gui()
     root = Tk()
     PiperXRemoteGUI(root, controller, task_store)
     root.mainloop()
