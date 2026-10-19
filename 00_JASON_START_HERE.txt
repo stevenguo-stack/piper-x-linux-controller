@@ -1,0 +1,90 @@
+PiPER X Windows v0.2 — Jason 快速上手
+==================================
+
+这份程序用于 NXTektal 的松灵 PiPER X 机械臂。
+包含中文遥控界面、模拟预览和真实 CAN 控制入口。
+本次交付增加上手说明，控制代码与已测试的 v0.2 相同。
+这是需要 Python 的程序包；运行时请保留整个文件夹。
+
+一、目前已经验证到哪里
+--------------------
+1. Steven 的 Windows 电脑已经打开中文模拟界面，并确认点击 Z 方向按钮后模拟 Z 数值变化。
+2. Windows 自动测试环境已完成依赖安装、导入检查、10 项控制/平台测试、两个界面创建和启动入口检查。
+3. Jason 电脑上的依赖、USB-CAN 驱动和真实机械臂通信尚未验证。
+4. 机械臂真实运动、抓篮/倒球路径与实际安装位置的示教仍需现场验证。
+   模拟坐标变化只能证明界面和该模拟操作能运行。
+
+二、在 Jason 自己的 Windows 电脑上安装
+------------------------------------
+1. 先把整个 ZIP 下载/保存到“下载（Downloads）”等普通文件夹，再“全部解压（Extract All）”。
+   在解压后的 PiPER_X_Windows 文件夹中运行程序。
+   若报错路径含 Temp\codex-file-preview，先正常另存 ZIP 到 Downloads 后再解压。
+
+2. 电脑需要 64 位 Python 3.10、3.11 或 3.12，并包含 pip、Tcl/Tk 和 Python Launcher。
+   已验证的安装包：Python 3.12.10，Windows 64 位：
+   https://www.python.org/ftp/python/3.12.10/python-3.12.10-amd64.exe
+   安装第一页勾选“Add python.exe to PATH”，选择“Install Now”，保留默认组件。
+   安装完成后关闭旧的报错窗口，重新启动程序。
+   如果安装器显示 Modify / Repair，可调整已有安装。
+
+3. 双击 install_windows.bat，保持联网，等待显示“Installation complete”。
+   它会创建这台电脑自己的 Python 环境，安装通信组件并检查导入。
+   首次安装需要能访问 GitHub 和 PyPI；安装过程不连接或移动机械臂。
+   Steven 电脑上的安装结果不会随 ZIP 转移，Jason 仍需完成这一步。
+   程序目录之后若被移动，需要按 README_WINDOWS_CN.md 重新建立环境。
+
+三、只看界面或测试模拟操作
+------------------------
+双击 preview_windows.bat（这一步只需 Python，不必先装通信组件）。
+窗口应显示“模拟预览”和“模拟模式（不控制真机）”。
+点击“连接”后，固件显示 DRY-RUN / SIMULATED；再点击“使能机械臂”并确认。
+用默认 2 mm 步长点击一次“上 +Z”，观察坐标和“状态与日志”。
+这一入口始终是模拟模式，不会把按钮操作发送给真实机械臂。
+模拟数据不能用来验证真实运动方向、可达范围或避碰效果。
+
+四、现场连接真实 PiPER X
+-----------------------
+1. 使用与松灵官方 Windows 后端兼容的 USB-CAN 模块，按随货说明准备对应驱动。
+   驱动和设备是否可用仍需在 Jason 的电脑验证；仅安装 Python 依赖不能证明硬件可通信。
+   按松灵官方说明完成 CAN 接线和机械臂独立供电。
+
+2. 双击 run_remote_windows.bat，打开真实控制界面。
+   此入口打开窗口后等待操作；默认 CAN 设备编号为 0、初始速度为 5%。
+   Windows 的 0 是设备索引，不是 COM0，也不是 Linux 的 can0。
+
+3. 首次点击“连接”后，先确认真实固件信息和关节反馈。
+   机械臂固定、底盘停车、空载且周围有运动空间后，再按界面确认使能。
+   从 2 mm / 0.5° 小步开始核对实际方向，实体急停应在手边。
+   软件停止按钮不能替代实体急停。
+
+4. 夹爪最大行程默认 70 mm，应按实际夹爪型号设置。
+   抓篮、倒球、放回等动作必须按实际安装位置逐点示教，再分段验证。
+   模拟示教文件与真实示教文件分开保存。
+
+五、遇到问题时反馈什么
+--------------------
+- 找不到 Python：保留完整提示，核对版本、64 位、PATH 和 Tk 组件。
+- 安装出现 ERROR / FAIL：截图保留具体错误以及窗口最后部分。
+- 软件环境复查：双击 check_windows.bat。它只检查软件，不打开 CAN。
+- 连接超时或无反馈：反馈 USB-CAN 型号/设备识别情况、CAN 编号以及“状态与日志”截图。
+- 安装检查全部 OK 后，真实通信和运动仍需现场验证。
+
+完整功能和故障说明：README_WINDOWS_CN.md
+高级控制界面：run_gui_windows.bat
+首次现场调试建议从上述中文遥控界面开始。
+
+依据与版本
+----------
+Windows 自动测试记录（Windows Server 2025 x64 / Python 3.12.10）：
+https://github.com/stevenguo-stack/piper-x-linux-controller/actions/runs/39176648946
+对应控制代码提交：6e9ec195a8c84e8c289207b5074ebe93fdccb49f
+
+Python 官方版本页面：
+https://www.python.org/downloads/release/python-31210/
+Python Windows 安装说明：
+https://docs.python.org/3.12/using/windows.html
+
+松灵官方 Windows CAN 后端说明（本程序固定版本）：
+https://github.com/agilexrobotics/pyAgxArm/blob/2255d88e1fabdf20fcd1eccbc4312b4ce1cfd2d4/docs/can_user.md
+
+交付说明更新：2026-10-19
